@@ -41,12 +41,39 @@ const ReportIssue = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handlePhotoUpload = () => {
-    // TODO: Implement photo upload from camera/gallery
-    toast({
-      title: "Photo Upload",
-      description: "Photo upload feature will be implemented with file picker",
-    });
+  const handlePhotoUpload = async (useCamera = false) => {
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      if (useCamera) {
+        input.capture = 'environment'; // Use rear camera
+      }
+      
+      input.onchange = (event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const result = e.target?.result as string;
+            setPhotos(prev => [...prev, result]);
+            toast({
+              title: "Photo Added",
+              description: "Photo has been added to your report",
+            });
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      
+      input.click();
+    } catch (error) {
+      toast({
+        title: "Camera Error",
+        description: "Unable to access camera. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLocationCapture = () => {
@@ -211,7 +238,7 @@ const ReportIssue = () => {
                   type="button" 
                   variant="outline" 
                   className="h-20 flex-col gap-2"
-                  onClick={handlePhotoUpload}
+                  onClick={() => handlePhotoUpload(true)}
                 >
                   <Camera className="h-6 w-6" />
                   <span className="text-sm">Camera</span>
@@ -220,14 +247,37 @@ const ReportIssue = () => {
                   type="button" 
                   variant="outline" 
                   className="h-20 flex-col gap-2"
-                  onClick={handlePhotoUpload}
+                  onClick={() => handlePhotoUpload(false)}
                 >
                   <Upload className="h-6 w-6" />
                   <span className="text-sm">Gallery</span>
                 </Button>
               </div>
               
-              <Button 
+              {photos.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                  {photos.map((photo, index) => (
+                    <div key={index} className="relative">
+                      <img 
+                        src={photo} 
+                        alt={`Photo ${index + 1}`} 
+                        className="w-full h-20 object-cover rounded border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-1 right-1 h-6 w-6 p-0"
+                        onClick={() => setPhotos(prev => prev.filter((_, i) => i !== index))}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <Button
                 type="button" 
                 variant="outline" 
                 className={`w-full h-12 ${isRecording ? 'border-destructive text-destructive' : ''}`}
